@@ -52,6 +52,16 @@ AgentBench Lite 参考 DeepEval、LangSmith、OpenAI Evals 等成熟工具中的
 
 如果更想贴后端岗，也可以用 NestJS + BullMQ。MVP 不强依赖 LangGraph，优先手写 ReAct 执行循环，把 Run / Step / Tool / Evaluation 的底层机制做清楚。
 
+## 环境配置模板
+
+项目提供以下环境配置模板，真实配置文件不会提交到仓库：
+
+- 根目录 `.env.example`：Docker Compose 全栈启动模板，复制为 `.env`。
+- `backend/.env.example`：后端本地开发模板，复制为 `backend/.env`。
+- `frontend/.env.local.example`：前端本地开发模板，复制为 `frontend/.env.local`。
+
+本地默认使用 Mock LLM，不配置 `OPENAI_API_KEY` 也可以跑通 demo；需要真实 OpenAI-compatible 模型时再填写该变量。
+
 ## 3. 核心业务流程
 
 ```text

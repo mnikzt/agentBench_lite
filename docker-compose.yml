@@ -2,29 +2,36 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: agentbench
-      POSTGRES_PASSWORD: agentbench
-      POSTGRES_DB: agentbench_lite
+      POSTGRES_USER: ${POSTGRES_USER:-agentbench}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agentbench}
+      POSTGRES_DB: ${POSTGRES_DB:-agentbench_lite}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
 
   backend:
     image: python:3.12-slim
     working_dir: /app/backend
     environment:
-      DATABASE_URL: postgresql+psycopg://agentbench:agentbench@postgres:5432/agentbench_lite
-      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://agentbench:agentbench@postgres:5432/agentbench_lite}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      QUEUE_NAME: ${QUEUE_NAME:-agentbench-runs}
+      WORKSPACE_DIR: ${WORKSPACE_DIR:-/app/workspace}
+      DEFAULT_LLM_MODEL: ${DEFAULT_LLM_MODEL:-gpt-4o-mini}
+      JUDGE_MODEL: ${JUDGE_MODEL:-gpt-4o-mini}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      RUN_TIMEOUT_SECONDS: ${RUN_TIMEOUT_SECONDS:-120}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-["http://localhost:3000","http://127.0.0.1:3000"]}
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       - postgres
       - redis
@@ -34,24 +41,30 @@ services:
     image: python:3.12-slim
     working_dir: /app/backend
     environment:
-      DATABASE_URL: postgresql+psycopg://agentbench:agentbench@postgres:5432/agentbench_lite
-      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://agentbench:agentbench@postgres:5432/agentbench_lite}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      QUEUE_NAME: ${QUEUE_NAME:-agentbench-runs}
+      WORKSPACE_DIR: ${WORKSPACE_DIR:-/app/workspace}
+      DEFAULT_LLM_MODEL: ${DEFAULT_LLM_MODEL:-gpt-4o-mini}
+      JUDGE_MODEL: ${JUDGE_MODEL:-gpt-4o-mini}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      RUN_TIMEOUT_SECONDS: ${RUN_TIMEOUT_SECONDS:-120}
     volumes:
       - .:/app
     depends_on:
       - postgres
       - redis
-    command: sh -c "pip install -e . && rq worker agentbench-runs --url redis://redis:6379/0"
+    command: sh -c "pip install -e . && rq worker $${QUEUE_NAME:-agentbench-runs} --url $${REDIS_URL:-redis://redis:6379/0}"
 
   frontend:
     image: node:22-slim
     working_dir: /app/frontend
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
     volumes:
       - .:/app
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
     command: sh -c "npm install && npm run dev -- --hostname 0.0.0.0"
