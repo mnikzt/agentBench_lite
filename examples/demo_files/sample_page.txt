@@ -1,0 +1,4 @@
+AgentBench Lite demo page
+
+This is a local demo document used by the file tool.
+It lets the ReActRuntime write a Step trace without depending on network or a real LLM.

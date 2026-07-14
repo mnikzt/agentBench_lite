@@ -1,0 +1,21 @@
+Metadata-Version: 2.4
+Name: agentbench-lite-backend
+Version: 0.1.0
+Summary: Agent execution and benchmark harness backend
+Requires-Python: >=3.11
+Requires-Dist: alembic
+Requires-Dist: fastapi
+Requires-Dist: httpx
+Requires-Dist: jsonschema
+Requires-Dist: openai
+Requires-Dist: playwright
+Requires-Dist: psycopg[binary]
+Requires-Dist: pydantic-settings
+Requires-Dist: pyyaml
+Requires-Dist: redis
+Requires-Dist: rq
+Requires-Dist: sqlalchemy
+Requires-Dist: uvicorn[standard]
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: ruff; extra == "dev"

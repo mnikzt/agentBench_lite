@@ -1,0 +1,25 @@
+id: api_summary_001
+name: API Information Summary
+description: Fetch a mock API and return a structured summary.
+input:
+  url: "https://jsonplaceholder.typicode.com/todos/1"
+agent:
+  mode: react
+  model: gpt-4o-mini
+  max_steps: 3
+  temperature: 0
+tools:
+  - http
+expected_output:
+  type: json
+  schema:
+    type: object
+    required:
+      - summary
+    properties:
+      summary:
+        type: string
+evaluation:
+  - type: json_schema
+  - type: llm_judge
+    rubric: "The answer should summarize the API response."

@@ -1,0 +1,24 @@
+id: file_read_demo_001
+name: File Read Demo
+description: Read a local demo file and produce a structured final answer.
+input:
+  file_path: "demo_files/sample_page.txt"
+agent:
+  mode: react
+  model: mock
+  max_steps: 3
+  timeout_seconds: 10
+  temperature: 0
+tools:
+  - file
+expected_output:
+  type: json
+  schema:
+    type: object
+    required:
+      - summary
+    properties:
+      summary:
+        type: string
+evaluation:
+  - type: json_schema

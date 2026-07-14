@@ -1,0 +1,7 @@
+id: web_extraction_basic
+name: Basic Web Extraction Benchmark
+description: Generic HTTP, mock browser, and file-summary tasks for Agent runtime regression.
+tasks:
+  - api_summary_001
+  - web_extract_price_001
+  - file_read_demo_001

@@ -1,0 +1,32 @@
+id: web_extract_price_001
+name: Web Extract Price
+description: Extract a product price and currency from a page.
+input:
+  url: "https://example.com"
+  mock_page_text: "Demo product page: price is 19.99 USD."
+  price: 19.99
+  currency: "USD"
+agent:
+  mode: react
+  model: gpt-4o-mini
+  max_steps: 3
+  temperature: 0
+tools:
+  - http
+  - browser
+expected_output:
+  type: json
+  schema:
+    type: object
+    required:
+      - price
+      - currency
+    properties:
+      price:
+        type: number
+      currency:
+        type: string
+evaluation:
+  - type: json_schema
+  - type: llm_judge
+    rubric: "The answer should contain a product price and currency."

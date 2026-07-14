@@ -1,0 +1,17 @@
+alembic
+fastapi
+httpx
+jsonschema
+openai
+playwright
+psycopg[binary]
+pydantic-settings
+pyyaml
+redis
+rq
+sqlalchemy
+uvicorn[standard]
+
+[dev]
+pytest
+ruff

@@ -1,0 +1,9 @@
+task_set_key: web_extraction_basic
+models:
+  - gpt-4o-mini
+prompts:
+  - baseline
+  - tool_first
+runtimes:
+  - react
+repeat: 2
