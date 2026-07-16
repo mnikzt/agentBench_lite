@@ -3,7 +3,7 @@ import time
 import httpx
 
 from app.tools.base import ToolResult
-from app.tools.url_safety import validate_public_http_url
+from app.tools.url_safety import validate_public_http_url, validate_public_response_peer
 
 
 class HttpTool:
@@ -17,13 +17,17 @@ class HttpTool:
         url = tool_input.get("url")
         if not url:
             return ToolResult({}, "Missing url", 0, error="Missing url")
-        validation_error = validate_public_http_url(str(url))
+        validation_error = await validate_public_http_url(str(url))
         if validation_error:
             return ToolResult({}, validation_error, 0, error=validation_error)
 
         try:
             async with httpx.AsyncClient(timeout=20, follow_redirects=False) as client:
                 response = await client.get(url)
+            peer_validation_error = validate_public_response_peer(response)
+            if peer_validation_error:
+                latency_ms = int((time.perf_counter() - start) * 1000)
+                return ToolResult({}, peer_validation_error, latency_ms, error=peer_validation_error)
             text = response.text[:5000]
             latency_ms = int((time.perf_counter() - start) * 1000)
             return ToolResult(

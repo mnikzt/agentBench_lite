@@ -13,7 +13,41 @@ This backend implements the MVP execution chain for AgentBench Lite:
 
 MVP execution uses the self-built `ReActRuntime`. LangGraph and DeepEval are intentionally not dependencies; they remain second-stage adapter candidates.
 
-By default the runtime uses `MockLLMClient`, so local runs do not require an API key. If `OPENAI_API_KEY` is configured, the OpenAI-compatible client is used instead.
+By default the runtime uses `MockLLMClient`, so local runs do not require an API key. If `OPENAI_API_KEY` or `OPENAI_BASE_URL` is configured, the OpenAI-compatible client is used instead.
+
+## Model Provider Configuration
+
+The MVP talks to model providers through the OpenAI-compatible Chat Completions API. For OpenAI, only an API key is required:
+
+```env
+OPENAI_API_KEY=sk-...
+DEFAULT_LLM_MODEL=gpt-4o-mini
+JUDGE_MODEL=gpt-4o-mini
+OPENAI_USE_JSON_RESPONSE_FORMAT=true
+```
+
+For OpenAI-compatible providers such as DeepSeek, Qwen-compatible gateways, OpenRouter, SiliconFlow, or a local Ollama server, set `OPENAI_BASE_URL` and the provider model name:
+
+```env
+OPENAI_API_KEY=your-provider-key
+OPENAI_BASE_URL=https://api.deepseek.com/v1
+DEFAULT_LLM_MODEL=deepseek-chat
+JUDGE_MODEL=deepseek-chat
+OPENAI_USE_JSON_RESPONSE_FORMAT=true
+```
+
+For local providers that do not require an API key, set only `OPENAI_BASE_URL`; the backend sends a placeholder key for SDK compatibility:
+
+```env
+OPENAI_BASE_URL=http://localhost:11434/v1
+DEFAULT_LLM_MODEL=qwen2.5:7b
+JUDGE_MODEL=qwen2.5:7b
+OPENAI_USE_JSON_RESPONSE_FORMAT=false
+```
+
+Set `OPENAI_USE_JSON_RESPONSE_FORMAT=false` if the provider does not support OpenAI JSON mode.
+
+Task specs are treated as trusted internal benchmark definitions in the MVP. If task creation is exposed to untrusted users later, sanitize user-authored prompt/instruction fields before sending them to model providers.
 
 ## Run Locally
 
@@ -85,7 +119,7 @@ Supported built-in evaluators:
 
 - `json_schema`
 - `exact_match`
-- `llm_judge` using a mock judge unless `OPENAI_API_KEY` is configured
+- `llm_judge` using a mock judge unless `OPENAI_API_KEY` or `OPENAI_BASE_URL` is configured
 
 Run summary fields are updated on completion:
 

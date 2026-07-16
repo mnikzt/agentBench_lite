@@ -1,11 +1,14 @@
 import json
-
-from openai import AsyncOpenAI
+import logging
+from typing import Any
 
 from app.core.config import get_settings
 from app.evaluator.result import EvaluationResult
 from app.models.run import Run
 from app.models.step import Step
+from app.runtime.llm_client import build_openai_sdk_client, has_openai_compatible_config
+
+logger = logging.getLogger(__name__)
 
 
 class MockLlmJudgeEvaluator:
@@ -40,15 +43,15 @@ class LlmJudgeEvaluator:
         )
         rubric = config.get("rubric", "Judge whether the final output satisfies the task.")
         settings = get_settings()
-        if not settings.openai_api_key:
+        if not has_openai_compatible_config():
+            logger.warning("No LLM provider configured; llm_judge is using mock scores.")
             return await MockLlmJudgeEvaluator().evaluate(run, steps, spec)
 
-        client = AsyncOpenAI(api_key=settings.openai_api_key)
-        response = await client.chat.completions.create(
-            model=settings.judge_model,
-            temperature=0,
-            response_format={"type": "json_object"},
-            messages=[
+        client = build_openai_sdk_client()
+        request: dict[str, Any] = {
+            "model": settings.judge_model,
+            "temperature": 0,
+            "messages": [
                 {
                     "role": "system",
                     "content": "Return JSON with score between 0 and 1, passed boolean, and reason.",
@@ -73,13 +76,22 @@ class LlmJudgeEvaluator:
                     ),
                 },
             ],
-        )
+        }
+        if settings.openai_use_json_response_format:
+            request["response_format"] = {"type": "json_object"}
+        response = await client.chat.completions.create(**request)
+        if not response.choices:
+            raise RuntimeError("LLM judge returned no choices.")
         raw = response.choices[0].message.content or "{}"
         try:
             parsed = json.loads(raw)
         except json.JSONDecodeError as exc:
             raise RuntimeError(f"LLM judge returned non-JSON response: {raw[:200]}") from exc
-        score = max(0.0, min(1.0, float(parsed.get("score", 0))))
+        raw_score = parsed.get("score", 0)
+        try:
+            score = max(0.0, min(1.0, float(raw_score)))
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError(f"LLM judge returned non-numeric score: {raw_score!r}") from exc
         return EvaluationResult(
             self.evaluator_type,
             score,

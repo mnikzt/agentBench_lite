@@ -48,31 +48,51 @@ class MockLLMClient:
         }
 
 
+def has_openai_compatible_config() -> bool:
+    settings = get_settings()
+    return bool(settings.openai_api_key or settings.openai_base_url)
+
+
+def build_openai_sdk_client() -> AsyncOpenAI:
+    settings = get_settings()
+    return AsyncOpenAI(
+        api_key=settings.openai_api_key or "not-needed",
+        base_url=settings.openai_base_url,
+        timeout=settings.llm_request_timeout_seconds,
+    )
+
+
 class OpenAICompatibleLLMClient:
     def __init__(self, model: str | None = None) -> None:
         settings = get_settings()
         self.model = model or settings.default_llm_model
         self.api_key = settings.openai_api_key
+        self.base_url = settings.openai_base_url
+        self.use_json_response_format = settings.openai_use_json_response_format
         self.cost_per_1k_tokens = settings.model_cost_per_1k_tokens_usd
-        self.client = AsyncOpenAI(api_key=self.api_key) if self.api_key else None
+        self.client = build_openai_sdk_client() if has_openai_compatible_config() else None
 
     async def next_action(self, task_spec: dict, run_input: dict | None, observations: list[str]) -> dict:
         if not self.client:
             return await self._fallback_action(task_spec, run_input, observations)
 
         prompt = self._build_prompt(task_spec, run_input, observations)
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            temperature=task_spec.get("agent", {}).get("temperature", 0),
-            messages=[
+        request: dict[str, Any] = {
+            "model": self.model,
+            "temperature": task_spec.get("agent", {}).get("temperature", 0),
+            "messages": [
                 {
                     "role": "system",
                     "content": "Return only JSON with thought, action, tool_name, tool_input, final_output.",
                 },
                 {"role": "user", "content": prompt},
             ],
-            response_format={"type": "json_object"},
-        )
+        }
+        if self.use_json_response_format:
+            request["response_format"] = {"type": "json_object"}
+        response = await self.client.chat.completions.create(**request)
+        if not response.choices:
+            raise RuntimeError("LLM returned no choices.")
         content = response.choices[0].message.content or "{}"
         try:
             action = json.loads(content)
@@ -101,7 +121,7 @@ class OpenAICompatibleLLMClient:
 
 
 def build_llm_client(model: str | None = None) -> LLMClient:
-    if get_settings().openai_api_key:
+    if has_openai_compatible_config():
         return OpenAICompatibleLLMClient(model)
     return MockLLMClient()
 
